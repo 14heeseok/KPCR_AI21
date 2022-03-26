@@ -10,7 +10,7 @@
 *** https://www.markdownguide.org/basic-syntax/#reference-style-links
 -->
 
-paper : [KPCR : Knowledge graph enhanced Personalized Course Recommendation (https://link.springer.com/chapter/10.1007/978-3-030-97546-3_60)
+paper : [KPCR : Knowledge graph enhanced Personalized Course Recommendation](https://link.springer.com/chapter/10.1007/978-3-030-97546-3_60)
 
 
 
