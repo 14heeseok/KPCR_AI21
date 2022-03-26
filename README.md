@@ -12,20 +12,6 @@
 
 
 
-## Requirements
-* [torch](https://pytorch.org/) == 1.7.0
-* [dgl-cu102](https://www.dgl.ai/) == 0.5.3
-
-## Usage
-1. Clone the repo
-```sh
-git clone https://github.com/14heeseok/KPCR_AI21.git
-```
-2. Run the codes
-```sh
-python3 main.py --kpcr_mode ls --dataset xue
-```
-
 
 
 ## Model Architecture
@@ -64,6 +50,22 @@ python3 main.py --kpcr_mode ls --dataset xue
 | KPCR(S) | 0.498 | 0.589 | 0.448 | 0.483 |
 | KPCR(Si) | 0.495 | 0.548 | 0.447 | 0.481 |
 | KGAT | 0.452 | 0.548 | 0.404 | 0.439 |
+
+
+
+## Requirements
+* [torch](https://pytorch.org/) == 1.7.0
+* [dgl-cu102](https://www.dgl.ai/) == 0.5.3
+
+## Usage
+1. Clone the repo
+```sh
+git clone https://github.com/14heeseok/KPCR_AI21.git
+```
+2. Run the codes
+```sh
+python3 main.py --kpcr_mode ls --dataset xue
+```
 
 
 
