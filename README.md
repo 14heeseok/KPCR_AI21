@@ -12,7 +12,7 @@
 
 paper : [KPCR : Knowledge graph enhanced Personalized Course Recommendation](https://link.springer.com/chapter/10.1007/978-3-030-97546-3_60)
 
-conference : [AI 2021: Advances in Artificial Intelligence] (http://www.ajcai2021.net/)
+conference : [AI 2021: Advances in Artificial Intelligence](http://www.ajcai2021.net/)
 
 
 
