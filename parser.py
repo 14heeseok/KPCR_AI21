@@ -21,6 +21,12 @@ def parse_args():
 
     parser.add_argument('--embed_dim', type=int, default=64,
                         help='User / entity / relation Embedding size.')
+    # GCN part
+    parser.add_argument('--gnn', nargs='?', default='gcn',
+                        help='[gcn, gat, sage, gin]')
+
+    parser.add_argument('--gnn_args', nargs='?', default='{}')
+
     # ConvE part
     parser.add_argument('--dropout', nargs='?', default='[0.2, 0.1, 0.3]',
                         help='Dropout probability of ConvE(emb,feat,hid)')
@@ -63,7 +69,7 @@ def parse_args():
     parser.add_argument('--stopping_steps', type=int, default=25,
                         help='Number of epoch for early stopping')
 
-    parser.add_argument('--print_every', type=int, default=1,
+    parser.add_argument('--print_every', type=int, default=50,
                         help='Iter interval of printing loss.')
 
     parser.add_argument('--evaluate_every', type=int, default=1,

@@ -94,36 +94,22 @@ def main(args):
         lv_history = []
         model.level_graph = dgl.remove_self_loop(model.level_graph)
         model.level_graph = dgl.add_self_loop(model.level_graph)
-        degs = model.level_graph.in_degrees().float()
-        norm = torch.pow(degs, -0.5)
-        norm[torch.isinf(norm)] = 0
-        model.level_graph.ndata['norm'] = norm.unsqueeze(1)
-        model.level_graph = model.level_graph.to('cpu')
-        sampler = dgl.dataloading.MultiLayerFullNeighborSampler(2)
-        dataloader = dgl.dataloading.NodeDataLoader(
-            model.level_graph, model.level_graph.nodes(), sampler,
-            batch_size=2048, shuffle=True, drop_last=False,
-            num_workers=2)
+        model.level_graph = model.level_graph.to(device)
 
     for epoch in range(1, args.n_epoch):
         model.train()
         if args.kpcr_mode == 'ls':
             time1 = time()
-            model.level_graph = model.level_graph.to('cpu')
             lv_loss_func = nn.BCEWithLogitsLoss()
-            for _, _, blocks in dataloader:
-                blocks = [b.to(device) for b in blocks]
-                features = blocks[0].srcdata['feat']
-                labels = blocks[-1].dstdata['level'].type(
-                    torch.FloatTensor).to(device)
-                logits = model.gcn(blocks, 'sto_predict', features)
-                lv_loss = lv_loss_func(logits, labels) * 0.1
-                optimizer.zero_grad()
-                lv_loss.backward()
-                optimizer.step()
-                lv_history.append(lv_loss.item())
-                torch.cuda.empty_cache()
-            model.level_graph = model.level_graph.to(device)
+            features = model.level_graph.ndata['feat'].to(device)
+            labels = model.level_graph.ndata['level'].type(
+                torch.FloatTensor).to(device)
+            logits = model.gcn(model.level_graph, 'predict', features)
+            lv_loss = lv_loss_func(logits, labels) * 0.1
+            optimizer.zero_grad()
+            lv_loss.backward()
+            optimizer.step()
+            lv_history.append(lv_loss.item())
             print('LV Training: Epoch {:04d} | Total Time {:.1f}s | Iter Loss {:.4f}'
                   .format(epoch, time() - time1, lv_loss.item()))
 

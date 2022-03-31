@@ -1,7 +1,10 @@
-from dgl.nn import GraphConv
+from dgl.nn import GraphConv, GATConv, SAGEConv, GINConv
 import torch
 from torch import nn
 from torch.nn import functional as F
+
+GNNS = {'gcn': GraphConv, 'gat': GATConv,
+        'sage': SAGEConv, 'gin': GINConv}
 
 
 def _L2_loss_mean(x):
@@ -9,27 +12,48 @@ def _L2_loss_mean(x):
 
 
 class GCN(nn.Module):
-    def __init__(self, in_feats, h_feats, num_classes):
+    def __init__(self, in_feats, h_feats, num_classes, gnn, gnn_args):
         super().__init__()
         self.in_feats = in_feats
         self.h_feats = h_feats
         self.num_classes = num_classes
-        self.conv1 = GraphConv(in_feats, h_feats)
-        self.conv2 = GraphConv(h_feats, num_classes)
+        self.gnn = gnn
+        self.nh = 1
 
-    def forward(self, blocks, mode, x):
-        if mode == 'sto_predict':
-            x = self.conv1(blocks[0], x)
+        # conv1 config
+        gnn_args['in_feats'] = self.in_feats
+        gnn_args['out_feats'] = self.h_feats
+        if self.gnn == 'gat':
+            self.nh = gnn_args['num_heads']
+        if self.gnn == 'gin':
+            self.lin1 = nn.Linear(self.in_feats, self.h_feats)
+            gnn_args['apply_func']=self.lin1
+            del(gnn_args['in_feats'], gnn_args['out_feats'])
+        self.conv1 = GNNS[gnn](**gnn_args)
+
+        # conv2 config
+        gnn_args['in_feats'] = self.nh * self.h_feats
+        gnn_args['out_feats'] = self.num_classes
+        if self.gnn == 'gin':
+            self.lin2 = nn.Linear(self.h_feats, self.num_classes)
+            gnn_args['apply_func']=self.lin2
+            del(gnn_args['in_feats'], gnn_args['out_feats'])
+        self.conv2 = GNNS[gnn]( **gnn_args)
+
+    def forward(self, g, mode, x):
+        if mode == 'predict':
+            x = self.conv1(g, x)
+            if self.gnn == 'gat':
+                x = x.view(-1,self.nh * self.h_feats)
             x = F.relu(x)
-            x = self.conv2(blocks[1], x)
-            return x
-        elif mode == 'predict':
-            x = self.conv1(blocks, x)
-            x = F.relu(x)
-            x = self.conv2(blocks, x)
+            x = self.conv2(g, x)
+            if self.gnn == 'gat':
+                x = x.mean(dim=1)
             return x
         elif mode == 'embedding':
-            x = self.conv1(blocks, x)
+            x = self.conv1(g, x)
+            if self.gnn == 'gat':
+                x = x.mean(dim=1)
             return x
 
 
@@ -65,7 +89,8 @@ class KPCR_LS(nn.Module):
             self.num_lv = 6
         self.level_graph = g
         self.gcn = GCN(self.n_users + self.n_items,
-                       args.embed_dim, self.num_lv)
+                       args.embed_dim, self.num_lv,
+                       args.gnn, eval(args.gnn_args))
         # ConvE part
         self.entity_embed = nn.Embedding(self.n_entities, self.embed_dim)
         self.relation_embed = nn.Embedding(self.n_relations, self.relation_dim)
@@ -128,7 +153,8 @@ class KPCR_LS(nn.Module):
         level_embed = self.gcn(
             self.level_graph, 'embedding',
             torch.eye(self.n_users+self.n_items,
-                      device=self.level_graph.device)).to(user_ids.device)
+                      device=self.level_graph.device
+                     )).to(user_ids.device)
         user_embed = self.entity_embed(user_ids) + level_embed[user_ids]
         item_pos_embed = self.entity_embed(item_pos_ids) +\
             level_embed[item_pos_ids]
@@ -155,7 +181,8 @@ class KPCR_LS(nn.Module):
         level_embed = self.gcn(
             self.level_graph, 'embedding',
             torch.eye(self.n_users+self.n_items,
-                      device=self.level_graph.device)).to(user_ids.device)
+                      device=self.level_graph.device
+                     )).to(user_ids.device)
         user_embed = self.entity_embed(user_ids) + level_embed[user_ids]
         item_embed = self.entity_embed(item_ids) + level_embed[item_ids]
         user_embed = self.entity_embed(user_ids) + level_embed[user_ids]
